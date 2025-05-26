@@ -8,6 +8,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@nutui/nutui": "^4.3.13",
     "core-js": "^3.8.3",
     "markdown-it": "^14.1.0",
     "vue": "^3.2.13"

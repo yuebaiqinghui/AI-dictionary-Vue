@@ -1,15 +1,50 @@
 <template>
+  <div class="logo">
+    <span @click="show = true" style="position: absolute;right: 5vw;top: 4vh;">切换语言</span>
+    <nut-popup v-model:visible="show" position="right" :style="{ width: '30%', height: '100%' }">
+      <nut-radio-group v-model="lan" direction="vertical"  style="margin: 20px;">
+        <nut-radio label="Chinese" shape="button" style="margin-bottom: 20px;">汉语</nut-radio>
+        <nut-radio label="English" shape="button" style="margin-bottom: 20px;">英语</nut-radio>
+        <nut-radio label="Malay" shape="button">马来语</nut-radio>
+      </nut-radio-group>
+      <!-- <button @click="show = false" style="margin-top: 10px;">关闭</button> -->
+    </nut-popup>
+  </div>
   <div class="chat-container">
+    <nut-radio-group v-model="val" direction="horizontal">
+      <nut-radio label="character" shape="button">汉字</nut-radio>
+      <nut-radio label="word" shape="button">词语</nut-radio>
+      <nut-radio label="idiom" shape="button">成语</nut-radio>
+      <nut-radio label="poetry" shape="button">古诗词</nut-radio>
+    </nut-radio-group>
+    <div class="input-container">
+      <nut-searchbar v-model="userInput" @keydown.enter.prevent="sendMessage" placeholder="请输入查询内容...">
+        <template #rightout> 
+          <nut-button type="info" :loading="isLoading" @click="sendMessage">查询</nut-button>
+        </template>
+        <template #rightin>
+          <Search2 />
+        </template>
+      </nut-searchbar>
+      <!-- <textarea
+        v-model="userInput"
+        @keydown.enter.prevent="sendMessage"
+        placeholder="请输入查询内容..."
+        rows="1"
+      ></textarea>
+      <button @click="sendMessage" :disabled="isLoading">查询</button> -->
+    </div>
     <div class="chat-messages" ref="messageContainer">
+      <img v-if="messages.length === 0" src="../assets/bg.png" alt="" srcset="" style="width: 100%;opacity: 0.2;margin-top: 20%;">
       <div
         v-for="(message, index) in messages"
         :key="index"
         class="message"
         :class="message.role"
       >
-        <div class="avatar" v-if="message.role === 'assistant'">
+        <!-- <div class="avatar" v-if="message.role === 'assistant'">
           <img src="https://api.dicebear.com/7.x/bottts/svg?seed=assistant" alt="Assistant" />
-        </div>
+        </div> -->
         <div class="message-content">
           <div v-if="message.role === 'assistant'" class="typing-content">
             <span
@@ -38,20 +73,12 @@
             {{ message.content }}
           </div>
         </div>
-        <div class="avatar" v-if="message.role === 'user'">
+        <!-- <div class="avatar" v-if="message.role === 'user'">
           <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=user" alt="User" />
-        </div>
+        </div> -->
       </div>
     </div>
-    <div class="input-container">
-      <textarea
-        v-model="userInput"
-        @keydown.enter.prevent="sendMessage"
-        placeholder="请输入内容..."
-        rows="3"
-      ></textarea>
-      <button @click="sendMessage" :disabled="isLoading">发送</button>
-    </div>
+    
   </div>
 </template>
 
@@ -69,10 +96,13 @@ export default {
       isThinking: false,
       apiKey: process.env.VUE_APP_DEEPSEEK_API_KEY || "",
       apiEndpoint:
-        "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+        "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
       typingSpeed: 50, // 打字速度（毫秒）
       currentTypingMessage: null,
       currentReasoningContent: null,
+      show: false,
+      val: 'character', // 默认查询类型
+      lan: 'Chinese', // 默认语言
     };
   },
   methods: {
@@ -116,7 +146,38 @@ export default {
       if (!this.apiKey) {
         throw new Error("API密钥未配置");
       }
+      const systemMessage = {
+        role: "system",
+        content: `
+        Please follow the steps below to complete the task of translating and culturally adapting Chinese content into ${this.lan} based on the input type (${this.val}):
 
+        1. Content Translation and Cultural Adaptation:
+          - If translating to Chinese:
+            - Use standard Mandarin Chinese for explanations(使用中文汉字输出解释).
+            - Ensure the content is appropriate for students in China, avoiding overly complex or culturally specific terms.
+            - Convert measurement units to the metric system, providing the conversion and reason in brackets.
+          - If translating to English:
+            - Choose vocabulary familiar to students in English-speaking countries.
+            - Explain Chinese-specific terms with background info or analogies.
+            - Adjust cultural elements to fit the target country's context, noting the reason in brackets.
+          - If translating to Malay:
+            - Use standard Bahasa Baku for explanations.
+            - Ensure content aligns with Islamic norms, especially regarding values, beliefs, and customs.
+            - Convert Chinese measurement units to international or commonly used local units, providing the conversion and reason in brackets.
+
+        2. Handling Sensitive Content and Historical Events:
+          - Stay neutral and objective regarding disputed territories, borders, or sovereignty. Mark such content with "[Needs manual review]".
+          - Enhance cultural relevance by linking Chinese historical events to similar ones from the target country's history, specifying the reason for the addition in brackets.
+
+        Ensure the output has no XML tags.
+        `,
+      }
+      let messages = this.messages.map((msg, i) => ({
+            role: msg.role,
+            content: msg.content,
+            prefix: this.messages.length == i + 1,
+          }))
+      messages.unshift(systemMessage)
       const response = await fetch(this.apiEndpoint, {
         method: "POST",
         headers: {
@@ -124,12 +185,8 @@ export default {
           Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          model: "deepseek-r1",
-          messages: this.messages.map((msg, i) => ({
-            role: msg.role,
-            content: msg.content,
-            prefix: this.messages.length == i + 1,
-          })),
+          model: "deepseek-v3-250324",
+          messages: messages, 
           stream: true,
         }),
       });
@@ -168,6 +225,7 @@ export default {
                   if (content) {
                     assistantMessage.content += content;
                     this.currentTypingMessage += content;
+                    console.log("当前内容:", this.currentTypingMessage);
                   }
                   if (reasoningContent) {
                     if (!assistantMessage.reasoning_content) {
@@ -201,13 +259,20 @@ export default {
 </script>
 
 <style scoped>
+.logo {
+  width: 98vw;
+  height: 8vh;
+  background: url('../assets/logo1.png') no-repeat left center;
+  background-size: contain;
+}
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 92vh;
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
+  padding-top: 0;
   box-sizing: border-box;
   position: fixed;
   left: 50%;
@@ -221,10 +286,9 @@ export default {
   padding: 20px;
   background: #f5f5f5;
   border-radius: 8px;
-  margin-bottom: 20px;
+  /* margin-top: 20px; */
   box-sizing: border-box;
 }
-
 .message {
   margin-bottom: 20px;
   display: flex;
@@ -234,7 +298,7 @@ export default {
 
 .message.user {
   /* flex-direction: row-reverse; */
-  justify-content: flex-end;
+  /* justify-content: flex-end; */
 }
 
 .avatar {
@@ -253,7 +317,7 @@ export default {
 }
 
 .message-content {
-  max-width: 70%;
+  max-width: 90%;
   padding: 12px 16px;
   border-radius: 8px;
   background: white;
