@@ -1,26 +1,26 @@
 <template>
   <div class="logo">
-    <span @click="show = true" style="position: absolute;right: 5vw;top: 4vh;">切换语言</span>
+    <span @click="show = true" style="position: absolute;right: 5vw;top: 4vh;">language</span>
     <nut-popup v-model:visible="show" position="right" :style="{ width: '30%', height: '100%' }">
       <nut-radio-group v-model="lan" direction="vertical"  style="margin: 20px;">
-        <nut-radio label="Chinese" shape="button" style="margin-bottom: 20px;">汉语</nut-radio>
-        <nut-radio label="English" shape="button" style="margin-bottom: 20px;">英语</nut-radio>
-        <nut-radio label="Malay" shape="button">马来语</nut-radio>
+        <nut-radio label="Chinese" shape="button" style="margin-bottom: 20px;">Chinese</nut-radio>
+        <nut-radio label="English" shape="button" style="margin-bottom: 20px;">English</nut-radio>
+        <nut-radio label="Malay" shape="button">Malay</nut-radio>
       </nut-radio-group>
       <!-- <button @click="show = false" style="margin-top: 10px;">关闭</button> -->
     </nut-popup>
   </div>
   <div class="chat-container">
     <nut-radio-group v-model="val" direction="horizontal">
-      <nut-radio label="character" shape="button">汉字</nut-radio>
-      <nut-radio label="word" shape="button">词语</nut-radio>
-      <nut-radio label="idiom" shape="button">成语</nut-radio>
-      <nut-radio label="poetry" shape="button">古诗词</nut-radio>
+      <nut-radio label="character" shape="button">Chinese character</nut-radio>
+      <nut-radio label="word" shape="button">word</nut-radio>
+      <nut-radio label="idiom" shape="button">idiom</nut-radio>
+      <nut-radio label="poetry" shape="button">poetry</nut-radio>
     </nut-radio-group>
     <div class="input-container">
-      <nut-searchbar v-model="userInput" @keydown.enter.prevent="sendMessage" placeholder="请输入查询内容...">
+      <nut-searchbar v-model="userInput" @keydown.enter.prevent="sendMessage" placeholder="Please enter your inquiry...">
         <template #rightout> 
-          <nut-button type="info" :loading="isLoading" @click="sendMessage">查询</nut-button>
+          <nut-button type="info" :loading="isLoading" @click="sendMessage">Search</nut-button>
         </template>
         <template #rightin>
           <Search2 />
@@ -52,7 +52,7 @@
                 isThinking && index === messages.length - 1 && !message.content
               "
               class="thinking"
-              >思考中...</span
+              >thinking...</span
             >
             <template v-else>
               <div v-if="index === messages.length - 1">
@@ -258,6 +258,11 @@ export default {
 };
 </script>
 
+<style>
+:root {
+  --nut-radio-button-font-size: 16px;
+}
+</style>
 <style scoped>
 .logo {
   width: 98vw;
